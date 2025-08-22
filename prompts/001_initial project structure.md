@@ -1,0 +1,1 @@
+Setup the project structure for the application, under the src folder. have separate folders for Javascript VueJS Frontend and C# .NET Core 9.0 Backend. Create the appropriate Test Projects in their respective folders too.
