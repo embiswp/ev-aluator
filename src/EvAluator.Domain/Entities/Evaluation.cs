@@ -6,21 +6,23 @@ namespace EvAluator.Domain.Entities;
 public class Evaluation
 {
     public Guid Id { get; private set; }
+    public UserId UserId { get; private set; }
     public Vehicle Vehicle { get; private set; }
     public IReadOnlyList<Trip> Trips { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public EvaluationResult Result { get; private set; }
 
-    private Evaluation(Guid id, Vehicle vehicle, IReadOnlyList<Trip> trips, DateTime createdAt, EvaluationResult result)
+    private Evaluation(Guid id, UserId userId, Vehicle vehicle, IReadOnlyList<Trip> trips, DateTime createdAt, EvaluationResult result)
     {
         Id = id;
+        UserId = userId;
         Vehicle = vehicle;
         Trips = trips;
         CreatedAt = createdAt;
         Result = result;
     }
 
-    public static Result<Evaluation> Create(Vehicle vehicle, IReadOnlyList<Trip> trips)
+    public static Result<Evaluation> Create(UserId userId, Vehicle vehicle, IReadOnlyList<Trip> trips)
     {
         if (trips.Count == 0)
             return Result<Evaluation>.Failure("At least one trip is required for evaluation");
@@ -29,14 +31,15 @@ public class Evaluation
         
         return Result<Evaluation>.Success(new Evaluation(
             Guid.NewGuid(),
+            userId,
             vehicle,
             trips,
             DateTime.UtcNow,
             result));
     }
 
-    public static Evaluation Restore(Guid id, Vehicle vehicle, IReadOnlyList<Trip> trips, DateTime createdAt, EvaluationResult result) =>
-        new(id, vehicle, trips, createdAt, result);
+    public static Evaluation Restore(Guid id, UserId userId, Vehicle vehicle, IReadOnlyList<Trip> trips, DateTime createdAt, EvaluationResult result) =>
+        new(id, userId, vehicle, trips, createdAt, result);
 
     private static EvaluationResult EvaluateTrips(Vehicle vehicle, IReadOnlyList<Trip> trips)
     {

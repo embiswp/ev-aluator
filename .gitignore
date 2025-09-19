@@ -346,6 +346,11 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# Environment variables
-.env
+# Configuration files with secrets
+appsettings.local.json
 .env.local
+
+# Frontend environment files
+frontend/.env.local
+frontend/node_modules/
+frontend/dist/

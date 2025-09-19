@@ -29,22 +29,51 @@
       </div>
     </div>
 
-    <LocationUpload 
-      @files-selected="handleFilesSelected"
-      class="component-section"
-    />
-    
-    <VehicleConfiguration 
-      v-if="filesUploaded"
-      @vehicle-configured="handleVehicleConfigured"
-      class="component-section"
-    />
-    
-    <EvaluationResults 
-      v-if="evaluationComplete"
-      :results="evaluationResults"
-      class="component-section"
-    />
+    <AuthGuard>
+      <template #authenticated="{ user }">
+        <LocationUpload 
+          @files-selected="handleFilesSelected"
+          class="component-section"
+        />
+        
+        <VehicleConfiguration 
+          v-if="filesUploaded"
+          @vehicle-configured="handleVehicleConfigured"
+          class="component-section"
+        />
+        
+        <EvaluationResults 
+          v-if="evaluationComplete"
+          :results="evaluationResults"
+          class="component-section"
+        />
+      </template>
+      
+      <template #unauthenticated>
+        <div class="auth-prompt">
+          <h3>Welcome to EvAluator!</h3>
+          <p>Sign in with your Google account to start analyzing your electric vehicle feasibility.</p>
+          <div class="features-list">
+            <div class="feature">
+              <h4>📍 Location Analysis</h4>
+              <p>Upload your location history from Google, Apple, or other services</p>
+            </div>
+            <div class="feature">
+              <h4>🚗 Vehicle Comparison</h4>
+              <p>Compare different electric vehicles against your travel patterns</p>
+            </div>
+            <div class="feature">
+              <h4>📊 Detailed Reports</h4>
+              <p>Get comprehensive feasibility reports with recommendations</p>
+            </div>
+          </div>
+          <GoogleSignInButton 
+            @sign-in-success="handleSignInSuccess"
+            @sign-in-error="handleSignInError"
+          />
+        </div>
+      </template>
+    </AuthGuard>
 
     <div v-if="vehicleConfigured && !evaluationComplete" class="analyze-section">
       <button @click="performAnalysis" class="analyze-btn" :disabled="analyzing">
@@ -58,13 +87,17 @@
 import LocationUpload from '../components/LocationUpload.vue'
 import VehicleConfiguration from '../components/VehicleConfiguration.vue'
 import EvaluationResults from '../components/EvaluationResults.vue'
+import AuthGuard from '../components/auth/AuthGuard.vue'
+import GoogleSignInButton from '../components/auth/GoogleSignInButton.vue'
 
 export default {
   name: 'HomeView',
   components: {
     LocationUpload,
     VehicleConfiguration,
-    EvaluationResults
+    EvaluationResults,
+    AuthGuard,
+    GoogleSignInButton
   },
   data() {
     return {
@@ -88,6 +121,12 @@ export default {
       this.vehicleConfig = config
       this.vehicleConfigured = true
       this.currentStep = 3
+    },
+    handleSignInSuccess(result) {
+      console.log('User signed in:', result)
+    },
+    handleSignInError(error) {
+      console.error('Sign in failed:', error)
     },
     async performAnalysis() {
       this.analyzing = true
@@ -226,6 +265,58 @@ export default {
   cursor: not-allowed;
 }
 
+.auth-prompt {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.auth-prompt h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+}
+
+.auth-prompt > p {
+  color: #7f8c8d;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.features-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0 3rem 0;
+}
+
+.feature {
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.feature h4 {
+  color: #2c3e50;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.feature p {
+  color: #6c757d;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
 @media (max-width: 768px) {
   .workflow-steps {
     flex-direction: column;
@@ -237,6 +328,15 @@ export default {
   
   .subtitle {
     font-size: 1.1rem;
+  }
+  
+  .features-list {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .auth-prompt {
+    padding: 2rem 1rem;
   }
 }
 </style>
