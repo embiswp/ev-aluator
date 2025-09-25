@@ -1,0 +1,6 @@
+@EVRangeAnalyzer_HostAddress = http://localhost:5081
+
+GET {{EVRangeAnalyzer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

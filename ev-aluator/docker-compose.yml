@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  ev-range-analyzer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"  # Frontend
+      - "5000:5000"  # Backend API
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__Redis=redis:6379
+    depends_on:
+      - redis
+    networks:
+      - ev-analyzer-network
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - ev-analyzer-network
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+  # Optional: Redis Commander for Redis management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+      - HTTP_USER=admin
+      - HTTP_PASSWORD=admin
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - ev-analyzer-network
+    restart: unless-stopped
+    profiles:
+      - debug
+
+networks:
+  ev-analyzer-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
