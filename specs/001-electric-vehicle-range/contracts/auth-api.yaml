@@ -1,0 +1,203 @@
+openapi: 3.0.3
+info:
+  title: EV Range Analyzer - Authentication API
+  version: 1.0.0
+  description: Google OAuth authentication endpoints for user login and session management
+
+servers:
+  - url: https://api.ev-analyzer.com/v1
+
+paths:
+  /auth/login:
+    get:
+      summary: Initiate Google OAuth login flow
+      description: Redirects user to Google OAuth consent screen with PKCE challenge
+      parameters:
+        - name: redirect_uri
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+          description: Post-login redirect URL (optional)
+      responses:
+        '302':
+          description: Redirect to Google OAuth authorization endpoint
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: Google OAuth URL with PKCE challenge
+        '400':
+          description: Invalid redirect URI format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/callback:
+    get:
+      summary: Handle Google OAuth callback
+      description: Process authorization code and establish user session
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code from Google OAuth
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+          description: State parameter for CSRF protection
+      responses:
+        '200':
+          description: Authentication successful, session established
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Secure session cookie
+        '400':
+          description: Invalid authorization code or state parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: OAuth authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/user:
+    get:
+      summary: Get current user profile
+      description: Returns authenticated user information
+      security:
+        - SessionCookie: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: User not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      summary: End user session
+      description: Invalidates session and clears all user data
+      security:
+        - SessionCookie: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Cookie deletion header
+        '401':
+          description: User not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    AuthResponse:
+      type: object
+      required:
+        - success
+        - user
+        - sessionId
+      properties:
+        success:
+          type: boolean
+          example: true
+        user:
+          $ref: '#/components/schemas/UserProfile'
+        sessionId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    UserProfile:
+      type: object
+      required:
+        - userId
+        - email
+        - name
+      properties:
+        userId:
+          type: string
+          description: Google user ID
+          example: "1234567890123456789"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        name:
+          type: string
+          example: "John Doe"
+        picture:
+          type: string
+          format: uri
+          description: Google profile picture URL
+          example: "https://lh3.googleusercontent.com/a/example"
+
+    LogoutResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Logged out successfully"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: "AUTHENTICATION_FAILED"
+        message:
+          type: string
+          example: "Invalid OAuth authorization code"
+        details:
+          type: object
+          description: Additional error details (optional)
+
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: ev-session
+      description: HTTP-only secure session cookie

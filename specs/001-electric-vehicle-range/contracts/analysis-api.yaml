@@ -1,0 +1,459 @@
+openapi: 3.0.3
+info:
+  title: EV Range Analyzer - Analysis API
+  version: 1.0.0
+  description: Electric vehicle range analysis and compatibility calculation endpoints
+
+servers:
+  - url: https://api.ev-analyzer.com/v1
+
+paths:
+  /analysis/ev-compatibility:
+    post:
+      summary: Analyze EV range compatibility
+      description: Calculate how many historical days would fit within specified EV range
+      security:
+        - SessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EVAnalysisRequest'
+      responses:
+        '200':
+          description: Analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EVAnalysisResponse'
+        '400':
+          description: Invalid EV range parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: User not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No location data available for analysis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /analysis/daily-distances:
+    get:
+      summary: Get daily driving distance breakdown
+      description: Returns daily distance calculations for historical data
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Filter start date (ISO format)
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Filter end date (ISO format)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          description: Maximum number of days to return
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [date, distance]
+            default: date
+          description: Sort order for results
+        - name: sortOrder
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort direction
+      responses:
+        '200':
+          description: Daily distances retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyDistancesResponse'
+        '401':
+          description: User not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No processed data available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /analysis/statistics:
+    get:
+      summary: Get driving statistics summary
+      description: Returns statistical overview of driving patterns
+      security:
+        - SessionCookie: []
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DrivingStatistics'
+        '401':
+          description: User not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No processed data available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /analysis/ev-recommendations:
+    get:
+      summary: Get EV range recommendations
+      description: Suggest optimal EV ranges based on driving patterns
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: confidenceLevel
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 0.5
+            maximum: 0.99
+            default: 0.95
+          description: Confidence level for recommendations (e.g., 0.95 = 95% of days)
+      responses:
+        '200':
+          description: Recommendations generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EVRecommendationsResponse'
+        '401':
+          description: User not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Insufficient data for recommendations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    EVAnalysisRequest:
+      type: object
+      required:
+        - evRangeKm
+      properties:
+        evRangeKm:
+          type: integer
+          minimum: 50
+          maximum: 1000
+          example: 400
+          description: Electric vehicle range in kilometers
+        includeChargingBuffer:
+          type: boolean
+          default: true
+          description: Reserve 10% battery for unexpected trips
+        analysisName:
+          type: string
+          maxLength: 100
+          example: "Tesla Model 3 Standard Range"
+          description: Optional name for this analysis
+
+    EVAnalysisResponse:
+      type: object
+      required:
+        - evRangeKm
+        - totalDaysAnalyzed
+        - compatibleDays
+        - compatibilityPercentage
+        - analysisDate
+      properties:
+        evRangeKm:
+          type: integer
+          example: 400
+        totalDaysAnalyzed:
+          type: integer
+          example: 340
+          description: Days with motorized vehicle trips
+        compatibleDays:
+          type: integer
+          example: 312
+          description: Days within EV range limit
+        incompatibleDays:
+          type: integer
+          example: 28
+          description: Days exceeding EV range limit
+        compatibilityPercentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 91.76
+          description: Percentage of compatible days
+        analysisDate:
+          type: string
+          format: date-time
+          example: "2025-09-25T14:30:00Z"
+        statistics:
+          type: object
+          required:
+            - averageDailyDistance
+            - medianDailyDistance
+            - maximumDailyDistance
+          properties:
+            averageDailyDistance:
+              type: number
+              example: 45.2
+            medianDailyDistance:
+              type: number
+              example: 38.5
+            maximumDailyDistance:
+              type: number
+              example: 520.8
+            standardDeviation:
+              type: number
+              example: 42.1
+        incompatibleDaysDetails:
+          type: array
+          description: Details of days that exceeded EV range
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                example: "2025-06-15"
+              distanceKm:
+                type: number
+                example: 485.2
+              exceedsRangeByKm:
+                type: number
+                example: 85.2
+
+    DailyDistancesResponse:
+      type: object
+      required:
+        - dailyDistances
+        - totalDays
+        - dateRange
+      properties:
+        dailyDistances:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyDistance'
+        totalDays:
+          type: integer
+          example: 340
+        dateRange:
+          type: object
+          required:
+            - startDate
+            - endDate
+          properties:
+            startDate:
+              type: string
+              format: date
+              example: "2022-01-15"
+            endDate:
+              type: string
+              format: date
+              example: "2025-09-20"
+        pagination:
+          type: object
+          properties:
+            hasMore:
+              type: boolean
+              example: false
+            nextCursor:
+              type: string
+              description: Cursor for next page of results
+
+    DailyDistance:
+      type: object
+      required:
+        - date
+        - totalDistanceKm
+        - motorizedTrips
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2025-09-20"
+        totalDistanceKm:
+          type: number
+          minimum: 0
+          example: 67.8
+        motorizedTrips:
+          type: integer
+          minimum: 0
+          example: 4
+        longestTripKm:
+          type: number
+          minimum: 0
+          example: 28.5
+        averageSpeedKmh:
+          type: number
+          minimum: 0
+          example: 52.3
+        transportModes:
+          type: array
+          items:
+            type: string
+            enum: [InVehicle, InBus, OnMotorcycle]
+          example: ["InVehicle", "InBus"]
+
+    DrivingStatistics:
+      type: object
+      required:
+        - totalDaysWithDriving
+        - totalDistanceKm
+        - averageDailyDistance
+        - medianDailyDistance
+      properties:
+        totalDaysWithDriving:
+          type: integer
+          example: 340
+        totalDistanceKm:
+          type: number
+          example: 15368.5
+        averageDailyDistance:
+          type: number
+          example: 45.2
+        medianDailyDistance:
+          type: number
+          example: 38.5
+        maximumDailyDistance:
+          type: number
+          example: 520.8
+        minimumDailyDistance:
+          type: number
+          example: 2.1
+        standardDeviation:
+          type: number
+          example: 42.1
+        percentileDistances:
+          type: object
+          properties:
+            p50:
+              type: number
+              example: 38.5
+            p75:
+              type: number
+              example: 62.3
+            p90:
+              type: number
+              example: 98.7
+            p95:
+              type: number
+              example: 142.8
+            p99:
+              type: number
+              example: 285.4
+        transportModeBreakdown:
+          type: object
+          properties:
+            InVehicle:
+              type: number
+              description: Percentage of total distance
+              example: 85.2
+            InBus:
+              type: number
+              example: 12.8
+            OnMotorcycle:
+              type: number
+              example: 2.0
+
+    EVRecommendationsResponse:
+      type: object
+      required:
+        - confidenceLevel
+        - recommendations
+      properties:
+        confidenceLevel:
+          type: number
+          example: 0.95
+        recommendations:
+          type: array
+          items:
+            type: object
+            properties:
+              rangeKm:
+                type: integer
+                example: 300
+              compatibilityPercentage:
+                type: number
+                example: 95.0
+              description:
+                type: string
+                example: "Covers 95% of your driving days"
+              category:
+                type: string
+                enum: [conservative, balanced, aggressive]
+                example: "balanced"
+        insights:
+          type: array
+          items:
+            type: string
+          example: [
+            "You drive more than 100km on only 5% of days",
+            "A 300km range EV would cover 95% of your trips",
+            "Consider home charging for optimal convenience"
+          ]
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: "INVALID_EV_RANGE"
+        message:
+          type: string
+          example: "EV range must be between 50 and 1000 kilometers"
+        details:
+          type: object
+
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: ev-session

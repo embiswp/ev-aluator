@@ -1,0 +1,317 @@
+openapi: 3.0.3
+info:
+  title: EV Range Analyzer - File Upload API
+  version: 1.0.0
+  description: Google Takeout location history file upload and processing endpoints
+
+servers:
+  - url: https://api.ev-analyzer.com/v1
+
+paths:
+  /upload/location-history:
+    post:
+      summary: Upload Google Takeout location history file
+      description: Accept and process Google Takeout JSON file (up to 100MB)
+      security:
+        - SessionCookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Google Takeout location history JSON file
+                replaceExisting:
+                  type: boolean
+                  default: false
+                  description: Replace existing data if present
+            encoding:
+              file:
+                contentType: application/json
+      responses:
+        '202':
+          description: File upload accepted, processing started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+        '400':
+          description: Invalid file format or size
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: User not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Data already exists, replaceExisting required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: File too large (>100MB)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /upload/status:
+    get:
+      summary: Get file processing status
+      description: Check upload and processing progress
+      security:
+        - SessionCookie: []
+      responses:
+        '200':
+          description: Processing status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingStatus'
+        '401':
+          description: User not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No upload found for current session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /data/summary:
+    get:
+      summary: Get uploaded data summary
+      description: Returns overview of processed location history data
+      security:
+        - SessionCookie: []
+      responses:
+        '200':
+          description: Data summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSummary'
+        '401':
+          description: User not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No processed data found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /data:
+    delete:
+      summary: Delete uploaded location data
+      description: Remove all location data from current session
+      security:
+        - SessionCookie: []
+      responses:
+        '200':
+          description: Data deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '401':
+          description: User not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No data found to delete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    UploadResponse:
+      type: object
+      required:
+        - uploadId
+        - status
+        - message
+      properties:
+        uploadId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        status:
+          type: string
+          enum: [uploading, parsing, processing, completed, failed]
+          example: "uploading"
+        message:
+          type: string
+          example: "File upload started"
+        estimatedProcessingTimeMs:
+          type: integer
+          minimum: 0
+          example: 30000
+          description: Estimated processing time in milliseconds
+
+    ProcessingStatus:
+      type: object
+      required:
+        - status
+        - progress
+      properties:
+        status:
+          type: string
+          enum: [uploading, parsing, processing, completed, failed]
+          example: "processing"
+        progress:
+          type: object
+          required:
+            - percentage
+            - currentStep
+            - totalSteps
+          properties:
+            percentage:
+              type: number
+              minimum: 0
+              maximum: 100
+              example: 65.5
+            currentStep:
+              type: string
+              example: "Analyzing transport modes"
+            totalSteps:
+              type: integer
+              minimum: 1
+              example: 4
+            processedPoints:
+              type: integer
+              minimum: 0
+              example: 125000
+            totalPoints:
+              type: integer
+              minimum: 0
+              example: 200000
+        error:
+          type: string
+          description: Error message if status is 'failed'
+          example: "Invalid JSON format in location data"
+        startedAt:
+          type: string
+          format: date-time
+          example: "2025-09-25T10:15:00Z"
+        completedAt:
+          type: string
+          format: date-time
+          description: Present when status is 'completed' or 'failed'
+          example: "2025-09-25T10:17:30Z"
+
+    DataSummary:
+      type: object
+      required:
+        - fileName
+        - fileSize
+        - dateRange
+        - totalLocationPoints
+        - totalDays
+      properties:
+        fileName:
+          type: string
+          example: "Location History.json"
+        fileSize:
+          type: number
+          description: File size in MB
+          example: 45.7
+        dateRange:
+          type: object
+          required:
+            - startDate
+            - endDate
+          properties:
+            startDate:
+              type: string
+              format: date
+              example: "2022-01-15"
+            endDate:
+              type: string
+              format: date
+              example: "2025-09-20"
+        totalLocationPoints:
+          type: integer
+          minimum: 0
+          example: 250000
+        totalDays:
+          type: integer
+          minimum: 0
+          example: 980
+        daysWithMotorizedTrips:
+          type: integer
+          minimum: 0
+          example: 340
+        averageDailyDistance:
+          type: number
+          minimum: 0
+          description: Average daily driving distance in km
+          example: 45.2
+        longestDayDistance:
+          type: number
+          minimum: 0
+          description: Maximum single-day distance in km
+          example: 520.8
+
+    DeleteResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Location data deleted successfully"
+        deletedItems:
+          type: object
+          properties:
+            locationPoints:
+              type: integer
+              example: 250000
+            dailySummaries:
+              type: integer
+              example: 340
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: "FILE_TOO_LARGE"
+        message:
+          type: string
+          example: "File size exceeds 100MB limit"
+        details:
+          type: object
+          description: Additional error context
+
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: ev-session
