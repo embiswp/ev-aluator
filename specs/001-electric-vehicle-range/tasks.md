@@ -22,16 +22,16 @@
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
 ### Contract Tests [P] - Can run in parallel
-- [ ] T007 [P] Contract test auth endpoints in backend/tests/contract/AuthApiTests.cs (login, callback, user, logout)
-- [ ] T008 [P] Contract test upload endpoints in backend/tests/contract/UploadApiTests.cs (location-history, status, summary, delete)
-- [ ] T009 [P] Contract test analysis endpoints in backend/tests/contract/AnalysisApiTests.cs (ev-compatibility, daily-distances, statistics, recommendations)
+- [X] T007 [P] Contract test auth endpoints in backend/tests/contract/AuthApiTests.cs (login, callback, user, logout)
+- [X] T008 [P] Contract test upload endpoints in backend/tests/contract/UploadApiTests.cs (location-history, status, summary, delete)
+- [X] T009 [P] Contract test analysis endpoints in backend/tests/contract/AnalysisApiTests.cs (ev-compatibility, daily-distances, statistics, recommendations)
 
 ### Integration Tests [P] - Can run in parallel  
-- [ ] T010 [P] Integration test complete user journey in backend/tests/integration/UserJourneyTests.cs (Scenario 1 from quickstart)
-- [ ] T011 [P] Integration test large file processing in backend/tests/integration/LargeFileProcessingTests.cs (Scenario 2 from quickstart)
-- [ ] T012 [P] Integration test error handling in backend/tests/integration/ErrorHandlingTests.cs (Scenario 3 from quickstart)
-- [ ] T013 [P] Integration test mobile responsiveness in frontend/tests/e2e/ResponsivenessTests.spec.ts (Scenario 4 from quickstart)
-- [ ] T014 [P] Integration test data privacy and security in backend/tests/integration/SecurityTests.cs (Scenario 5 from quickstart)
+- [X] T010 [P] Integration test complete user journey in backend/tests/integration/UserJourneyTests.cs (Scenario 1 from quickstart)
+- [X] T011 [P] Integration test large file processing in backend/tests/integration/LargeFileProcessingTests.cs (Scenario 2 from quickstart)
+- [X] T012 [P] Integration test error handling in backend/tests/integration/ErrorHandlingTests.cs (Scenario 3 from quickstart)
+- [X] T013 [P] Integration test mobile responsiveness in frontend/tests/e2e/ResponsivenessTests.spec.ts (Scenario 4 from quickstart)
+- [X] T014 [P] Integration test data privacy and security in backend/tests/integration/SecurityTests.cs (Scenario 5 from quickstart)
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
