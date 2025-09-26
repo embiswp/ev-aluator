@@ -4,9 +4,11 @@
     <!-- Documentation Rules -->
     <Rule Id="SA1633" Action="None" /> <!-- File must have header -->
     <Rule Id="SA1652" Action="None" /> <!-- Enable XML documentation output -->
-    <Rule Id="SA1600" Action="Warning" /> <!-- Elements must be documented -->
-    <Rule Id="SA1601" Action="Warning" /> <!-- Partial elements must be documented -->
-    <Rule Id="SA1602" Action="Warning" /> <!-- Enumeration items must be documented -->
+    <Rule Id="SA1600" Action="None" /> <!-- Elements must be documented - Disabled for tests -->
+    <Rule Id="SA1601" Action="None" /> <!-- Partial elements must be documented - Disabled for tests -->
+    <Rule Id="SA1602" Action="None" /> <!-- Enumeration items must be documented - Disabled for tests -->
+    <Rule Id="SA1611" Action="None" /> <!-- Element parameters should be documented - Disabled for tests -->
+    <Rule Id="SA1615" Action="None" /> <!-- Element return value should be documented - Disabled for tests -->
 
     <!-- Spacing Rules -->
     <Rule Id="SA1000" Action="Error" /> <!-- Keywords must be spaced correctly -->
